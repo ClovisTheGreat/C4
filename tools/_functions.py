@@ -139,7 +139,6 @@ def masscausalcandidates(adata, interestgenes, interestsignals, threshold = 0.0)
     pvalframe = pvalframe.reset_index(drop=True)    
     return pvalframe
 
-%run 'causal_function_gamma.py'
 #this does the causal function many times
 #you need to input an adata object
 #you also need to input a pandas dataframe called candidates
@@ -147,7 +146,7 @@ def masscausalcandidates(adata, interestgenes, interestsignals, threshold = 0.0)
 #each row is a signal-gene pair for which we want to run the causal inference algorithm
 #you can use the pandas dataframe output by the masscausalcandidates function, but you can also make your own
 #the output is a new dataframe that will include columns for the ATE and the causal inference p-value
-def masscausal(adata, candidates, propensity_score_model = 'loGAMgit', model = 'linear', method = 'AIPW', bootstrap=False, teststyle='Naive', n_covars = 20, n_samples = 10000, graph=False):
+def masscausal(adata, candidates, propensity_score_model = 'GAM', model = 'linear', method = 'AIPW', bootstrap=False, teststyle='Naive', n_covars = 20, n_samples = 10000, graph=False):
     """
     Calculate the causal relationship between a pathway and gene from the adata file
 
