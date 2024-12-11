@@ -282,6 +282,8 @@ def pearsonties(adata, causalresults):
 
     #now we merge the pearson values with the causal results
     causal = pd.merge(causalresults, sorted_stacked, on=['Pathway', 'Gene'], how='inner')
+    #then we sort the dataframe (first by p_values then by Pearsons)
     causal = causal.sort_values(by=['p_values','Pearson'], ascending=[True, False], ignore_index=True)
 
     return causal
+
