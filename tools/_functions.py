@@ -33,7 +33,7 @@ def findgenes(adata, ngenes = 2000):
 
 
 #find highly variable signalling pathways
-def findsignals(adata, nsignals=10, filtermincells=20, style='most active'):
+def findsignals(adata, nsignals=100, filtermincells=20, style='most active'):
     """
     Find the most highly variable signalling pathways
 
