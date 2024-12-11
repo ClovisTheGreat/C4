@@ -6,7 +6,7 @@ import numpy as np
 #find a more limited number of highly variable genes
 #this might be a bit redundant, but we make a new adata object that only uses the highly variable genes found in preprocessing and then we 
 #look for the most highly variable genes in that dataset
-def findgenes(adata, ngenes = 200):
+def findgenes(adata, ngenes = 2000):
     """
     Find the most highly variable genes
 
