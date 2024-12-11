@@ -1,7 +1,17 @@
 
 from pygam import GAM, s
 import numpy as np
+import commot as ct
 
+#cell communication function
+def cellcoms(adata, species):
+    #load in cell chat and filer
+    df_cellchat = ct.pp.ligand_receptor_database(species=species, signaling_type='Secreted Signaling', database='CellChat')
+    df_cellchat_filtered = ct.pp.filter_lr_database(df_cellchat, adata, min_cell_pct=0.05)
+
+    #run commot algorithm
+    ct.tl.spatial_communication(adata,
+    database_name='cellchat', df_ligrec=df_cellchat_filtered, dis_thr=500, heteromeric=True, pathway_sum=True)
 
 #GAM fitter function
 #this is back-end and is just necessary to make the mass GAM fitter run
