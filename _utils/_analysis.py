@@ -3,6 +3,63 @@ import pandas as pd
 from collections import defaultdict
 import numpy as np
 
+def pearsondf(adata, interestsignals, interestgenes):
+    """
+    Rank the top signal-gene pairs using Pearson correlation coefficients
+
+    Parameters
+    ----------
+    adata
+        The data matrix of shape ``n_obs`` × ``n_var``.
+        Rows correspond to cells or spots and columns to genes.
+    causalresults
+        DataFrame that has column called pathway, gene, ATEs, and p_values
+        Represents the results of the causal inference test
+    
+    Returns
+    -------
+    DataFrame : pandas
+        A DataFrame with the columns 'Pathway', 'Gene', 'ATEs', 'p_values', and 'Pearson'
+        'Pathway', 'Gene', 'ATEs', and 'p_values' are the same as the input DataFrame
+        'Pearson' is the Pearson correlation coefficient
+        The DataFrame is sorted based on smallest p-value and largest Pearson correlation coefficient
+
+    """
+    #first we will make some vectors to speed up calculations
+    adata.layers['counts'] = adata.X
+    pearsons = pd.DataFrame(columns = interestsignals, index = interestgenes)
+    signalmeans = {}
+    signalvectors = {}
+    signalsds = {}
+    for signal in list(pearsons.columns):
+        signalmeans[signal] = np.mean(adata.obsm['commot-cellchat-sum-receiver'][signal])
+        signalvectors[signal] = adata.obsm['commot-cellchat-sum-receiver'][signal] - signalmeans[signal]
+        signalsds[signal] = np.sqrt(np.sum(np.square(adata.obsm['commot-cellchat-sum-receiver'][signal] - signalmeans[signal])))
+
+    genemeans = {}
+    genevectors = {}
+    genesds = {}
+    for gene in list(pearsons.index):
+        genemeans[gene] = np.mean(adata.layers['counts'][:, adata.var_names == gene].toarray().flatten())
+        genevectors[gene] = adata.layers['counts'][:, adata.var_names == gene].toarray().flatten() - genemeans[gene]
+        genesds[gene] = np.sqrt(np.sum(np.square(adata.layers['counts'][:, adata.var_names == gene].toarray().flatten() - genemeans[gene])))
+
+    #now the actual pearsons calculations
+    for signal in list(pearsons.columns):
+        for gene in list(pearsons.index):
+            pearsons.loc[gene, signal] = np.sum(np.multiply(signalvectors[signal], genevectors[gene]))/(signalsds[signal]*genesds[gene])
+    
+    #and we want to stack by absolute value (rank by absolute value)
+    abs = pearsons.abs()
+    stacked = abs.stack()
+    stacked = stacked.reset_index()
+    stacked.columns = ['Gene', 'Pathway', 'Pearson']
+    sorted_stacked = stacked.sort_values(ascending=False, by='Pearson')
+    sorted_stacked = sorted_stacked.reset_index(drop=True)
+
+    return sorted_stacked
+
+
 #first, we must construct dictionaries of known biological information
 #load in REACTOME
 #REACTOME contains LR and TF pairs
@@ -323,6 +380,9 @@ def powermetric(results, n, Ns, N):
 #sometimes a pathway promotes the expression of its own receptor
 #maybe we want to remove these
 def receptorfilter(results, cellchatchoice):
+    """
+    cellchatchoice should be either CellChatmouse_dict or CellChathuman_dict
+    """
     overlap = list()
     for i in range(len(results)):
         gene = results.loc[i, 'Gene']
@@ -439,3 +499,9 @@ def tfactivitysearch(data, causalresults, pathwaydatabase, receptordatabase, rec
                     activityvalue = activityvalue + activitysums.loc[0, TF]
 
             causalresults.loc[i, "TF sum"] = activityvalue
+
+# sometimes we also want to know the total amount of signal
+def signalsum(results, data):
+    for i in range(0,len(results)):
+        if results.loc[i, "dictionary search"] == "yes":
+            results.loc[i, "Signal sum"] = sum(data.obsm['commot-cellchat-sum-receiver'][results.loc[i, "Pathway"]])
